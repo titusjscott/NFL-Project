@@ -33,7 +33,6 @@ pbp$temp[is.na(pbp$temp)] <- 70
 pbp$wind[is.na(pbp$wind)] <- 0
 
 # Getting Offensive and Defensive EPA 
-# Does not include $success, $fumble_lost, or $interception
 
 offense <- pbp %>% 
   group_by(game_id, posteam, pass, temp, wind, roof, home_team, away_team, season) %>% 
@@ -130,11 +129,6 @@ team_wins_game <- team_wins_game %>%
     )
   )
 
-#check changes
-team_wins_game %>% 
-  group_by(team) %>% 
-  summarize(n=n()) %>% 
-  arrange(n)
 
 #team wins by season
 team_wins_season <- results %>% 
@@ -143,10 +137,6 @@ team_wins_season <- results %>%
     wins = sum(win),
     point_diff = sum(result)) %>% 
   ungroup()
-
-team_wins_season %>% 
-  arrange(-wins) %>% 
-  head(5)
 
 
 
@@ -161,15 +151,8 @@ team_wins_season <- team_wins_season %>%
     )
   )
 
-#check changes
-team_wins_season %>% 
-  group_by(team) %>% 
-  summarize(n=n()) %>% 
-  arrange(n)
 
-# final data set to use? missing $success, $fumble_lost, or $interception. Need to find
-# how to get these variables in, they are binary and I couldn't get them to go through the EPA config.
-# change some of the variables into useable forms.
+# joinning data sets
 data <- team_wins_game %>% 
   left_join(offense, by = c('team' = 'posteam', 'game_id')) %>% 
   left_join(defense, by = c('team' = 'defteam', 'game_id'))
