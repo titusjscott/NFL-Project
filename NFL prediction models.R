@@ -161,53 +161,32 @@ data <- team_wins_game %>%
 # Remove duplicate columns using subset
 data <- subset(data, select = -c(temp.y, wind.y, home_team.y, away_team.y, roof.y, season.y, season))
 
+#clean up data some more
+data <- data %>% 
+  rename('season' = 'season.x', 'temp' = 'temp.x', 'wind' = 'wind.x', 'roof' = 'roof.x', 'home_team' = 'home_team.x', 'away_team' = 'away_team.x' )
+
+# Join offensive fumbles and interceptions to Data
+data <- data %>% 
+  left_join(fumbles, by = c('game_id', 'team' = 'posteam')) %>% 
+  left_join(interception, by = c('game_id', 'team' = 'posteam'))
 
 #Remove unneeded columns using subset
 data <- subset(data, select = -c(no_fumble, NA.x, no_interception, NA.y))
 
 # Rename columns. 
 data <- data %>% 
-  rename('fumble_1' = 'lost_fumble', 'fumble_2' = '2_fumble', 'fumble_3' = '3_fumble', 'fumble_4' = '4_fumble', 'fumble_5' = '5_fumble', 'interception_2' = '2_interception', 'interception_3' = '3_interception', 'interception_4' = '4_interception', 'interception_5' = '5_interception', 'interception_6' = '6_interception')
+  rename('fumble_1' = 'lost_fumble', 'fumble_2' = '2.x', 'fumble_3' = '3.x', 'fumble_4' = '4.x', 'fumble_5' = '5.x', 'interception_2' = '2.y', 'interception_3' = '3.y', 'interception_4' = '4.y', 'interception_5' = '5.y', 'interception_6' = '6')
 
-def_fumbles <- def_fumbles %>% 
-  rename('fumble_won_1' = 'fumble_won', 'fumble_won_2' = '2', 'fumble_won_3' = '3', 'fumble_won_4' = '4', 'fumble_won_5' = '5')
-
-def_interception <- def_interception %>% 
-  rename('interception_made_1' = 'interception_made', 'interception_made_2' = '2', 'interception_made_3' = '3', 'interception_made_4' = '4', 'interception_made_5' = '5', 'interception_made_6' = '6')
-
-
-# Join fumbles and interceptions to Data
-data <- data %>% 
-  left_join(fumbles, by = c('game_id', 'team' = 'posteam')) %>% 
-  left_join(interception, by = c('game_id', 'team' = 'posteam'))
-
-data <- data %>% 
-  left_join(def_fumbles, by = c('game_id', 'team' = 'defteam'))
-
-data <- data %>% 
-  left_join(def_interception, by = c('game_id', 'team' = 'defteam'))
-
-#clean up data some more
-data <- data %>% 
-  rename('season' = 'season.x', 'temp' = 'temp.x', 'wind' = 'wind.x', 'roof' = 'roof.x', 'home_team' = 'home_team.x', 'away_team' = 'away_team.x' )
 
 #change NA values to 0
 data <- data %>% 
   mutate_at(c('fumble_1', 'fumble_2', 'fumble_3', 'fumble_4', 'fumble_5', 'interception', 'interception_2', 'interception_3', 'interception_4', 'interception_5', 'interception_6'), ~replace_na(.,0))
 
-data <- data %>% 
-  mutate_at(c('fumble_won_1', 'fumble_won_2', 'fumble_won_3', 'fumble_won_4', 'fumble_won_5', 'interception_made_1', 'interception_made_2', 'interception_made_3', 'interception_made_4', 'interception_made_5', 'interception_made_6'), ~replace_na(.,0))
-
-#combine fumbles and interceptions into total fumbles and total interceptions
+#combine offensive fumbles and interceptions into total fumbles and total interceptions
 
 data$total_fumbles_lost <- rowSums(data[startsWith(names(data), "fumble")])
 
 data$total_interceptions_thrown <- rowSums(data[startsWith(names(data), "interception")])
-
-#combining defensive turnovers (MAKE SURE COLUMN NUMBERS ARE CORRECT BEFORE PROCEEDING)
-data$total_fumbles_won <- rowSums(data[,29:33])
-
-data$total_interceptions_made <- rowSums(data[,34:39])
 
 #total the offensive turnovers
 data$off_turnovers <- rowSums(data[startsWith(names(data), "total")])
@@ -215,6 +194,34 @@ data$off_turnovers <- rowSums(data[startsWith(names(data), "total")])
 #convert offensive turnovers to negative numbers
 data$off_turnovers = data$off_turnovers*(-1)
 
+# Rename defensive turnover columns. 
+
+def_fumbles <- def_fumbles %>% 
+  rename('fumble_won_1' = 'fumble_won', 'fumble_won_2' = '2', 'fumble_won_3' = '3', 'fumble_won_4' = '4', 'fumble_won_5' = '5')
+
+def_interception <- def_interception %>% 
+  rename('interception_made_1' = 'interception_made', 'interception_made_2' = '2', 'interception_made_3' = '3', 'interception_made_4' = '4', 'interception_made_5' = '5', 'interception_made_6' = '6')
+
+# Join defensive fumbles and interceptions to Data
+
+data <- data %>% 
+  left_join(def_fumbles, by = c('game_id', 'team' = 'defteam'))
+
+data <- data %>% 
+  left_join(def_interception, by = c('game_id', 'team' = 'defteam'))
+
+#Remove unneeded columns using subset
+data <- subset(data, select = -c(no_fumble, NA.x, no_interception, NA.y))
+
+#change defensive turnover NA values to 0
+data <- data %>% 
+  mutate_at(c('fumble_won_1', 'fumble_won_2', 'fumble_won_3', 'fumble_won_4', 'fumble_won_5', 'interception_made_1', 'interception_made_2', 'interception_made_3', 'interception_made_4', 'interception_made_5', 'interception_made_6'), ~replace_na(.,0))
+
+
+#combining defensive turnovers (MAKE SURE COLUMN NUMBERS ARE CORRECT BEFORE PROCEEDING)
+data$total_fumbles_won <- rowSums(data[,29:33])
+
+data$total_interceptions_made <- rowSums(data[,34:39])
 
 #total the defensive turnovers
 data$def_turnovers <- rowSums(data[,40:41])
@@ -232,11 +239,11 @@ data <- data %>%
   mutate(dome = ifelse(roof %in% c('closed', 'dome'), 1, 0))
 
 #removing columns
-data_final <- subset(data_final, select = -c(home_team, away_team, roof, fumble_1, fumble_2, fumble_3, fumble_4, fumble_5, interception, interception_2, interception_3, interception_4, interception_5, interception_6, total_fumbles_lost, total_interceptions_thrown, fumble_won_1, fumble_won_2, fumble_won_3, fumble_won_4, fumble_won_5, interception_made_1, interception_made_2, interception_made_3, interception_made_4, interception_made_5, interception_made_6, total_fumbles_won, total_interceptions_made))
-
+data_final <- subset(data, select = -c(home_team, away_team, roof, fumble_1, fumble_2, fumble_3, fumble_4, fumble_5, interception, interception_2, interception_3, interception_4, interception_5, interception_6, total_fumbles_lost, total_interceptions_thrown, fumble_won_1, fumble_won_2, fumble_won_3, fumble_won_4, fumble_won_5, interception_made_1, interception_made_2, interception_made_3, interception_made_4, interception_made_5, interception_made_6, total_fumbles_won, total_interceptions_made))
+names(data_final)
 #rearrange columns
 data_final <- data_final %>% 
-  select(game_id, season, team, point_diff, wins, home, turnover_diff, dome, temp, wind, off_pass_epa, off_rush_epa, def_pass_epa, def_rush_epa, off_turnovers, def_turnovers)
+  select(game_id, season, team, point_diff, wins, turnover_diff, off_pass_epa, off_rush_epa, def_pass_epa, def_rush_epa, home, dome, temp, wind)
 
 write.csv(data_final, "nfldataproject.csv", row.names = FALSE)
 
@@ -247,8 +254,8 @@ set.seed(42)
 data_final_train <- sample(1:nrow(data_final), as.integer(nrow(data_final) * .8))
 data_final_test <- setdiff(1:nrow(data_final), data_final_train)
 
-data_final_train_factor <- data[data_final_train_set_all, ]
-data_final_test_factor <- data[data_final_test_set_all, ]
+data_final_train_factor <- data[data_final_train, ]
+data_final_test_factor <- data[data_final_test, ]
 
 #Logistic Regression Model
 log_wins <- glm(wins ~ home + turnover_diff + off_pass_epa + off_rush_epa + def_pass_epa + def_rush_epa, data = data_final)
@@ -263,9 +270,6 @@ log_wins_co <- glm(wins ~ (home + turnover_diff + off_pass_epa + off_rush_epa + 
 summary(log_wins_co)
 
 log_wins$fitted.values
-
-glmfit$fitted.values
-
 
 #testing example
 data_final %>% 
@@ -334,7 +338,7 @@ write.csv(wins_preds_rf, "randomforestgamepred.csv", row.names = FALSE)
 
 #Xgboost Model
 
-data_final_matrix <- subset(data_final, select = -c(game_id, season, team, point_diff, off_turnovers, def_turnovers))
+data_final_matrix <- subset(data_final, select = -c(game_id, season, team, point_diff))
 
 smp_size <- floor(0.80 * nrow(data_final_matrix))
 set.seed(2011) #go lions
@@ -351,7 +355,7 @@ wins_xg <-
     data = train[, 2:10],
     label = train[, 1],
     nrounds = 1000,
-    objective = "reg:squarederror",
+    objective = "binary:logistic",
     early_stopping_rounds = 3,
     max_depth = 12,
     eta = .25
@@ -361,7 +365,9 @@ wins_xg <-
 xgb.plot.tree(model = wins_xg, trees = 5)
 
 #get predictions
-pred_xgb <- predict(wins_xg, test[, 2:10])
+pred_xgb <- predict(wins_xg, test[, 2:10], type = "prob")
+
+head(pred_xgb, 1)
 
 #see RMSE
 yhat <- pred_xgb
@@ -379,7 +385,26 @@ xg_prob <- cbind(data_final, wins_preds_xg)
 
 #rearrange columns
 xg_prob <- xg_prob %>% 
-  select(game_id, season, team, point_diff, wins, pred_win, home, turnover_diff, dome, temp, wind, off_pass_epa, off_rush_epa, def_pass_epa, def_rush_epa, off_turnovers, def_turnovers)
+  select(game_id, season, team, point_diff, wins, pred_win, home, turnover_diff, dome, temp, wind, off_pass_epa, off_rush_epa, def_pass_epa, def_rush_epa)
+
+choose_cutoff <- function(preds, acts, start = .5) {
+  counter <- start
+  best_acc <- 0
+  best_cutoff <- start
+  while (counter >= 0) {
+    test_preds <- ifelse(preds > counter, 1, 0)
+    test_acc <- sum(test_preds == acts) / length(acts)
+    print(paste(test_acc, counter))
+    if (test_acc > best_acc) {
+      best_acc <- test_acc
+      best_cutoff <- counter
+    }
+    counter <- counter - .01
+  }
+  return(best_cutoff)
+}
+
+choose_cutoff(yhat, y)
 
 #write xg boost pred to csv
 write.csv(xg_prob, "xgboostgamepred.csv", row.names = FALSE)
